@@ -145,7 +145,7 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
                 "metadata": metadata,
                 "files": {},
                 "alignedNucleotideSequences": {},
-                "unalignedNucleotideSequences": sequence.data.get("unalignedNucleotideSequences", {}),
+                "unalignedNucleotideSequences": {"main": sequence.data.get("unalignedNucleotideSequences", {})},
                 "alignedAminoAcidSequences": {},
                 "nucleotideInsertions": {},
                 "aminoAcidInsertions": {}
