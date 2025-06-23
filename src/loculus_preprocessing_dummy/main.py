@@ -135,12 +135,10 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
         metadata = sequence.data.get("metadata", {})
 
         for unaligned_sequence in sequence.data.get("unalignedNucleotideSequences", {}):
-            if "main" in unaligned_sequence:
-                sequence = unaligned_sequence.get("main")
-                if sequence == "AAAA":
-                    metadata["clade"] = "cladei"
-                elif sequence == "AAAT":
-                    metadata["clade"] = "cladeii"
+            if unaligned_sequence == "AAAA":
+                metadata["clade"] = "cladei"
+            elif unaligned_sequence == "AAAT":
+                metadata["clade"] = "cladeii"
 
 
         data = {
