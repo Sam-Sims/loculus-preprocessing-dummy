@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-preprocess = "loculus_preprocessing_dummy:main"
+preprocess = "loculus_preprocessing_dummy:main.main"
 
 [build-system]
 requires = ["hatchling"]
