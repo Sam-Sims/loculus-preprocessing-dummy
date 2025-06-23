@@ -136,7 +136,7 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
 
         for unaligned_sequence in sequence.data.get("unalignedNucleotideSequences", {}):
             if "main" in unaligned_sequence:
-                sequence = unaligned_sequence["main"]
+                sequence = unaligned_sequence.get("main")
                 if sequence == "AAAA":
                     metadata["clade"] = "cladei"
                 elif sequence == "AAAT":
