@@ -151,16 +151,19 @@ def parse_ndjson(ndjson_data: str) -> list[Sequence]:
 def process(unprocessed: list[Sequence]) -> list[Sequence]:
     processed = []
     for sequence in unprocessed:
+        logging.info(f"Sequnce {sequence}")
+        logging.info(f"Type of sequence: {type(sequence)}")
         metadata = sequence.data.get("metadata", {})
         logging.info(f"Metadata: {metadata}")
-        for unaligned_sequence in sequence.data.get("unalignedNucleotideSequences", {}):
-            logging.info(f"{unaligned_sequence}")
-            logging.info(type(f"{unaligned_sequence}"))
-            main = sequence.data.get("main", "main")
-            logging.info(f"Processing main sequence: {main}")
-            if main == "AAAA":
+        # loop through unaligned nucleotide sequences dict in data get key and pair
+        for k, v in sequence.data.get(
+            "unalignedNucleotideSequences", {"failed_to_get_nt_seqs": "fail"}
+        ).items():
+            logging.info(f"Unaligned sequence key: {k}, value: {v}")
+            logging.info(f"Processing main sequence: {v}")
+            if v == "AAAA":
                 metadata["clade"] = "cladei"
-            elif main == "AAAT":
+            elif v == "AAAT":
                 metadata["clade"] = "cladeii"
 
         processedFiles = {}
