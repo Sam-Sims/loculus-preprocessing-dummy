@@ -1,4 +1,3 @@
-# modified from https://github.com/loculus-project/loculus/blob/main/preprocessing/dummy/main.py
 import argparse
 import dataclasses
 import json
@@ -130,34 +129,101 @@ def parse_ndjson(ndjson_data: str) -> list[Sequence]:
 
 
 def process(unprocessed: list[Sequence]) -> list[Sequence]:
+    # with open("mock-sequences.json", "r") as f:
+    #     mock_sequences = json.load(f)
+    possible_lineages = ["A.1", "A.1.1", "A.2"]
+
     processed = []
     for sequence in unprocessed:
         metadata = sequence.data.get("metadata", {})
+        if not disableConsensusSequences:
+            metadata["clade"] = random.choice(possible_lineages)
 
-        for unaligned_sequence in sequence.data.get("unalignedNucleotideSequences", {}):
-            if unaligned_sequence == "AAAA":
-                metadata["clade"] = "cladei"
-            elif unaligned_sequence == "AAAT":
-                metadata["clade"] = "cladeii"
-
+        processedFiles = {}
+        files = sequence.data.get("files", {})
+        if files is not None:
+            for file_category, file_list in files.items():
+                processedFiles[file_category] = []
+                for file in file_list:
+                    processedFiles[file_category].append({
+                        "fileId": file["fileId"],
+                        "name": file["name"]
+                    })
 
         data = {
-                "metadata": metadata,
-                "files": {},
-                "alignedNucleotideSequences": {},
-                "unalignedNucleotideSequences": {"main": sequence.data.get("unalignedNucleotideSequences", {})},
-                "alignedAminoAcidSequences": {"main": "NNNN"},
-                "nucleotideInsertions": {},
-                "aminoAcidInsertions": {}
-            }
+            "metadata": metadata,
+            "files": processedFiles,
+            "alignedNucleotideSequences": {"main": "NNNN"},
+            "unalignedNucleotideSequences": {"main": sequence.data.get("unalignedNucleotideSequences", {}).get("main", "NNNN")},
+            "alignedAminoAcidSequences": {},
+            "nucleotideInsertions": {},
+            "aminoAcidInsertions": {}
+        }
         
+        # if not disableConsensusSequences:
+        #     data = {**data, **mock_sequences}
+
         updated_sequence = Sequence(
-            accession=sequence.accession,
-            version=sequence.version,
-            data=data,
-            errors=[],
-            warnings=[],
+            sequence.accession,
+            sequence.version,
+            data,
         )
+
+        disable_randomly = randomWarnError and random.choice([True, True, False])
+        if addErrors and not disable_randomly:
+            updated_sequence.errors.append(
+                ProcessingAnnotation(
+                    unprocessedFields=[AnnotationSource(list(metadata.keys())[0], "Metadata")],
+                    processedFields=[AnnotationSource(list(metadata.keys())[0], "Metadata")],
+                    message="This is a metadata error",
+                )
+            )
+            if not disableConsensusSequences:
+                updated_sequence.errors.append(
+                    ProcessingAnnotation(
+                        unprocessedFields=[
+                            AnnotationSource(
+                                "test_unprocessed_error",
+                                "NucleotideSequence",
+                            )
+                        ],
+                        processedFields=[
+                            AnnotationSource(
+                                "test_processed_error",
+                                "NucleotideSequence",
+                            )
+                        ],
+                        message="This is a sequence error",
+                    )
+                )
+
+        disable_randomly = randomWarnError and random.choice([True, False])
+        if addWarnings and not disable_randomly:
+            updated_sequence.warnings.append(
+                ProcessingAnnotation(
+                    unprocessedFields=[AnnotationSource(list(metadata.keys())[0], "Metadata")],
+                    processedFields=[AnnotationSource(list(metadata.keys())[0], "Metadata")],
+                    message="This is a metadata warning",
+                )
+            )
+            if not disableConsensusSequences:
+                updated_sequence.warnings.append(
+                    ProcessingAnnotation(
+                        unprocessedFields=[
+                            AnnotationSource(
+                                "test_unprocessed_warn",
+                                "NucleotideSequence",
+                            )
+                        ],
+                        processedFields=[
+                            AnnotationSource(
+                                "test_rpocessed_warn",
+                                "NucleotideSequence",
+                            )
+                        ],
+                        message="This is a sequence warning",
+                    )
+                )
 
         processed.append(updated_sequence)
 
