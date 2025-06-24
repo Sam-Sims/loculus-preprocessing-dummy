@@ -302,7 +302,7 @@ def main():
 
     if watch_mode:
         logging.debug(
-            "Started in watch mode - waiting 10 seconds before fetching data."
+            "Started in watch mode - waiting 10 seconds before fetching data....."
         )
         time.sleep(10)
 
