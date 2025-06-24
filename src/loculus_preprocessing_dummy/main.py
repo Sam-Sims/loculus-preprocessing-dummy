@@ -153,8 +153,8 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
     for sequence in unprocessed:
         metadata = sequence.data.get("metadata", {})
         for unaligned_sequence in sequence.data.get("unalignedNucleotideSequences", {}):
-            print(unaligned_sequence)
-            print(type(unaligned_sequence))
+            logging.info(f"{unaligned_sequence}")
+            logging.info(type(f"{unaligned_sequence}"))
             main = sequence.data.get("main", "main")
             logging.info(f"Processing main sequence: {main}")
             if main == "AAAA":
