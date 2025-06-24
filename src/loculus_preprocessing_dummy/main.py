@@ -156,6 +156,8 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
             logging.info(
                 f"Processing sequence {sequence.accession} version {sequence.version} with unaligned sequence: {unaligned_sequence}"
             )
+            main = sequence.data.get("main", "main")
+            logging.info(f"Processing main sequence: {main}")
             if unaligned_sequence == "AAAA":
                 metadata["clade"] = "cladei"
             elif unaligned_sequence == "AAAT":
