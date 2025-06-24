@@ -185,6 +185,8 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
             "aminoAcidInsertions": {},
         }
 
+        logging.info(f"Data: {data}")
+
         # if not disableConsensusSequences:
         #     data = {**data, **mock_sequences}
 
