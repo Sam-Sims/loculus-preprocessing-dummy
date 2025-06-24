@@ -136,8 +136,7 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
     processed = []
     for sequence in unprocessed:
         metadata = sequence.data.get("metadata", {})
-        if not disableConsensusSequences:
-            metadata["clade"] = random.choice(possible_lineages)
+        metadata["clade"] = random.choice(possible_lineages)
 
         processedFiles = {}
         files = sequence.data.get("files", {})
