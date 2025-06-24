@@ -152,6 +152,7 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
     processed = []
     for sequence in unprocessed:
         metadata = sequence.data.get("metadata", {})
+        logging.info(f"Metadata: {metadata}")
         for unaligned_sequence in sequence.data.get("unalignedNucleotideSequences", {}):
             logging.info(f"{unaligned_sequence}")
             logging.info(type(f"{unaligned_sequence}"))
