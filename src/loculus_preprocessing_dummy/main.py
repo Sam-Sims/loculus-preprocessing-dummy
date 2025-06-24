@@ -22,22 +22,36 @@ parser.add_argument(
     action="store_true",
     help="Watch and keep running. Fetches new data every 10 seconds.",
 )
-parser.add_argument("--withErrors", action="store_true", help="Add errors to processed data.")
-parser.add_argument("--withWarnings", action="store_true", help="Add warnings to processed data.")
 parser.add_argument(
-    "--randomWarnError", action="store_true", help="Make errors and warnings occur stochastically"
+    "--withErrors", action="store_true", help="Add errors to processed data."
+)
+parser.add_argument(
+    "--withWarnings", action="store_true", help="Add warnings to processed data."
+)
+parser.add_argument(
+    "--randomWarnError",
+    action="store_true",
+    help="Make errors and warnings occur stochastically",
 )
 parser.add_argument(
     "--maxSequences", type=int, help="Max number of sequence entry versions to process."
 )
 parser.add_argument(
-    "--batchSize", type=int, default=100, help="Max number of sequence entry versions to process in each cycle"
+    "--batchSize",
+    type=int,
+    default=100,
+    help="Max number of sequence entry versions to process in each cycle",
 )
 parser.add_argument(
-    "--keycloak-host", type=str, default="http://127.0.0.1:8083", help="Host address of Keycloak"
+    "--keycloak-host",
+    type=str,
+    default="http://127.0.0.1:8083",
+    help="Host address of Keycloak",
 )
 parser.add_argument(
-    "--disableConsensusSequences", action="store_true", help="Don't submit consensus sequences"
+    "--disableConsensusSequences",
+    action="store_true",
+    help="Don't submit consensus sequences",
 )
 parser.add_argument(
     "--keycloak-user",
@@ -92,7 +106,9 @@ class Sequence:
     warnings: list[ProcessingAnnotation] = field(default_factory=list)
 
 
-def fetch_unprocessed_sequences(etag: str | None, n: int) -> tuple[str | None, list[Sequence]]:
+def fetch_unprocessed_sequences(
+    etag: str | None, n: int
+) -> tuple[str | None, list[Sequence]]:
     url = backendHost + "/extract-unprocessed-data"
     params = {"numberOfSequenceEntries": n, "pipelineVersion": pipeline_version}
     headers = {
@@ -123,20 +139,24 @@ def parse_ndjson(ndjson_data: str) -> list[Sequence]:
         if json_str:
             json_object = json.loads(json_str)
             entries.append(
-                Sequence(json_object["accession"], json_object["version"], json_object["data"])
+                Sequence(
+                    json_object["accession"],
+                    json_object["version"],
+                    json_object["data"],
+                )
             )
     return entries
 
 
 def process(unprocessed: list[Sequence]) -> list[Sequence]:
-    # with open("mock-sequences.json", "r") as f:
-    #     mock_sequences = json.load(f)
-    possible_lineages = ["A.1", "A.1.1", "A.2"]
-
     processed = []
     for sequence in unprocessed:
         metadata = sequence.data.get("metadata", {})
-        metadata["clade"] = random.choice(possible_lineages)
+        for unaligned_sequence in sequence.data.get("unalignedNucleotideSequences", {}):
+            if unaligned_sequence == "AAAA":
+                metadata["clade"] = "cladei"
+            elif unaligned_sequence == "AAAT":
+                metadata["clade"] = "cladeii"
 
         processedFiles = {}
         files = sequence.data.get("files", {})
@@ -144,21 +164,22 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
             for file_category, file_list in files.items():
                 processedFiles[file_category] = []
                 for file in file_list:
-                    processedFiles[file_category].append({
-                        "fileId": file["fileId"],
-                        "name": file["name"]
-                    })
+                    processedFiles[file_category].append(
+                        {"fileId": file["fileId"], "name": file["name"]}
+                    )
 
         data = {
             "metadata": metadata,
             "files": processedFiles,
             "alignedNucleotideSequences": {"main": "NNNN"},
-            "unalignedNucleotideSequences": sequence.data.get("unalignedNucleotideSequences", {main: "NNNN"}),
+            "unalignedNucleotideSequences": sequence.data.get(
+                "unalignedNucleotideSequences", {main: "NNNN"}
+            ),
             "alignedAminoAcidSequences": {},
             "nucleotideInsertions": {},
-            "aminoAcidInsertions": {}
+            "aminoAcidInsertions": {},
         }
-        
+
         # if not disableConsensusSequences:
         #     data = {**data, **mock_sequences}
 
@@ -172,8 +193,12 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
         if addErrors and not disable_randomly:
             updated_sequence.errors.append(
                 ProcessingAnnotation(
-                    unprocessedFields=[AnnotationSource(list(metadata.keys())[0], "Metadata")],
-                    processedFields=[AnnotationSource(list(metadata.keys())[0], "Metadata")],
+                    unprocessedFields=[
+                        AnnotationSource(list(metadata.keys())[0], "Metadata")
+                    ],
+                    processedFields=[
+                        AnnotationSource(list(metadata.keys())[0], "Metadata")
+                    ],
                     message="This is a metadata error",
                 )
             )
@@ -200,8 +225,12 @@ def process(unprocessed: list[Sequence]) -> list[Sequence]:
         if addWarnings and not disable_randomly:
             updated_sequence.warnings.append(
                 ProcessingAnnotation(
-                    unprocessedFields=[AnnotationSource(list(metadata.keys())[0], "Metadata")],
-                    processedFields=[AnnotationSource(list(metadata.keys())[0], "Metadata")],
+                    unprocessedFields=[
+                        AnnotationSource(list(metadata.keys())[0], "Metadata")
+                    ],
+                    processedFields=[
+                        AnnotationSource(list(metadata.keys())[0], "Metadata")
+                    ],
                     message="This is a metadata warning",
                 )
             )
@@ -234,8 +263,13 @@ def submit_processed_sequences(processed: list[Sequence]):
     json_strings = [json.dumps(dataclasses.asdict(sequence)) for sequence in processed]
     ndjson_string = "\n".join(json_strings)
     logging.info(ndjson_string)
-    url = backendHost + "/submit-processed-data?pipelineVersion=" + str(pipeline_version)
-    headers = {"Content-Type": "application/x-ndjson", "Authorization": "Bearer " + get_jwt()}
+    url = (
+        backendHost + "/submit-processed-data?pipelineVersion=" + str(pipeline_version)
+    )
+    headers = {
+        "Content-Type": "application/x-ndjson",
+        "Authorization": "Bearer " + get_jwt(),
+    }
     response = requests.post(url, data=ndjson_string, headers=headers)
     if not response.ok:
         raise Exception(
@@ -254,7 +288,9 @@ def get_jwt():
     }
     response = requests.post(url, data=data)
     if not response.ok:
-        raise Exception(f"Fetching JWT failed. Status code: {response.status_code}", response.text)
+        raise Exception(
+            f"Fetching JWT failed. Status code: {response.status_code}", response.text
+        )
     return response.json()["access_token"]
 
 
@@ -265,11 +301,17 @@ def main():
     last_force_refresh = time.time()
 
     if watch_mode:
-        logging.debug("Started in watch mode - waiting 10 seconds before fetching data.")
+        logging.debug(
+            "Started in watch mode - waiting 10 seconds before fetching data."
+        )
         time.sleep(10)
 
     max_sequences = args.maxSequences
-    sequences_to_fetch = max_sequences if max_sequences and max_sequences < args.batchSize else args.batchSize
+    sequences_to_fetch = (
+        max_sequences
+        if max_sequences and max_sequences < args.batchSize
+        else args.batchSize
+    )
 
     while True:
         if last_force_refresh + 3600 < time.time():
@@ -279,7 +321,9 @@ def main():
         etag, unprocessed = fetch_unprocessed_sequences(etag, sequences_to_fetch)
         if len(unprocessed) == 0:
             if watch_mode:
-                logging.debug(f"Processed {locally_processed} sequences. Sleeping for 2 seconds.")
+                logging.debug(
+                    f"Processed {locally_processed} sequences. Sleeping for 2 seconds."
+                )
                 time.sleep(2)
                 locally_processed = 0
                 continue
